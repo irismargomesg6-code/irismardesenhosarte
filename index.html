@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Irismar Desenhos — Encomendas</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Georgia, serif; }
+        :root {
+            --fundo: #f8f4ec; --marrom-escuro: #3a2e24; --marrom-medio: #7a5c3d;
+            --marrom-claro: #b89a7b; --dourado: #c8a962; --branco: #fff;
+            --sombra: rgba(42,31,20,0.15); --sucesso: #e6f4ea; --borda-sucesso: #4caf50;
+        }
+        body { background: var(--fundo); color: var(--marrom-escuro); line-height: 1.6; padding: 2rem 1rem; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        h1 { text-align: center; font-size: 2.4rem; color: var(--marrom-escuro); margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 3px solid var(--dourado); }
+        .subtitulo { text-align: center; font-size: 1.1rem; color: var(--marrom-medio); margin-bottom: 2rem; font-style: italic; }
+        .aviso { background: #f5efe5; border-left: 4px solid var(--dourado); padding: 1rem 1.2rem; margin-bottom: 2rem; border-radius: 0 8px 8px 0; }
+        .formatos-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 2rem; margin-bottom: 3rem; }
+        .formato-card { background: var(--branco); border-radius: 12px; padding: 1.8rem; text-align: center; box-shadow: 0 6px 18px var(--sombra); transition: transform 0.3s; }
+        .formato-card:hover { transform: translateY(-5px); }
+        .formato-card h3 { font-size: 1.3rem; color: var(--marrom-escuro); margin-bottom: 0.3rem; }
+        .dimensoes { color: var(--marrom-medio); font-size: 0.9rem; margin-bottom: 0.5rem; }
+        .preco { font-size: 1.7rem; font-weight: bold; color: var(--marrom-escuro); margin-bottom: 1.2rem; }
+
+        /* MOLDURA E PRÉ-VISUALIZAÇÃO DA FOTO */
+        .moldura {
+            position: relative; border: 10px solid #e8d9c5; outline: 3px solid var(--marrom-claro);
+            background: #fff; margin: 0 auto 1rem; box-shadow: inset 0 0 0 4px #f5ede0, 0 4px 12px rgba(0,0,0,0.2);
+            display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer;
+        }
+        .moldura-a4 { width: 180px; height: 255px; }
+        .moldura-a3 { width: 240px; height: 340px; }
+        .moldura-paisagem { width: 280px; height: 190px; }
+        .moldura input[type="file"] { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 5; }
+        .moldura-img { position: absolute; width: 100%; height: 100%; object-fit: cover; z-index: 2; display: none; }
+        .moldura-texto { text-align: center; color: var(--marrom-medio); font-size: 0.85rem; padding: 1rem; z-index: 3; pointer-events: none; }
+        .moldura-texto span { font-size: 2rem; opacity: 0.5; display: block; margin-bottom: 0.5rem; }
+        .moldura.tem-foto .moldura-texto { display: none; }
+        .moldura.tem-foto .moldura-img { display: block; }
+
+        .descricao { font-size: 0.85rem; color: #555; margin-bottom: 1rem; line-height: 1.4; }
+        .selecao { display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-weight: 500; color: var(--marrom-escuro); cursor: pointer; }
+        .selecao input { width: auto; cursor: pointer; }
+
+        /* FORMULÁRIO */
+        .dados-cliente { background: var(--branco); border-radius: 12px; padding: 2.2rem; box-shadow: 0 6px 18px var(--sombra); }
+        .dados-cliente h2 { text-align: center; font-size: 1.6rem; color: var(--marrom-medio); margin-bottom: 2rem; }
+        .grupo { margin-bottom: 1.3rem; }
+        .linha-dupla { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--marrom-escuro); }
+        input, textarea { width: 100%; padding: 0.9rem; border: 1px solid var(--marrom-claro); border-radius: 8px; font-size: 1rem; background: #fefcf8; }
+        input:focus, textarea:focus { outline: none; border-color: var(--dourado); box-shadow: 0 0 0 2px rgba(200,169,98,0.3); }
+        .cep-linha { display: flex; gap: 0.8rem; align-items: flex-end; }
+        .cep-linha > div { flex: 1; }
+        .btn-pequeno { background: var(--marrom-claro); color: var(--marrom-escuro); border: none; padding: 0.9rem 1rem; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap; }
+        .btn-pequeno:hover { background: var(--dourado); }
+        .frete-caixa { margin-top: 1rem; padding: 1rem; background: #f0f8f0; border-radius: 8px; display: none; }
+        .frete-caixa.visivel { display: block; }
+        .frete-opcao { padding: 0.7rem; margin: 0.5rem 0; background: white; border-radius: 6px; border: 2px solid transparent; cursor: pointer; }
+        .frete-opcao.ativo { border-color: var(--dourado); background: #fff9ea; }
+        button[type="submit"] {
+            background: linear-gradient(135deg, var(--marrom-medio), var(--marrom-escuro));
+            color: white; border: none; padding: 1.1rem 2rem; font-size: 1.1rem;
+            border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold;
+            transition: transform 0.3s; margin-top: 1rem;
+        }
+        button[type="submit"]:hover { transform: scale(1.02); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        /* MENSAGEM DE SUCESSO — GARANTIDA */
+        .sucesso {
+            display: none; background: var(--sucesso); border-left: 5px solid var(--borda-sucesso);
+            border-radius: 8px; padding: 2.5rem; margin-top: 2rem; text-align: center;
+        }
+        .sucesso.ativa { display: block !important; animation: aparece 0.5s ease forwards; }
+        @keyframes aparece { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .sucesso h2 { color: var(--borda-sucesso); margin-bottom: 1.5rem; }
+        .destaque { font-weight: bold; color: var(--marrom-escuro); }
+        .botao-novo { display: inline-block; margin-top: 1.5rem; background: var(--marrom-medio); color: white; padding: 0.9rem 2rem; border-radius: 8px; text-decoration: none; font-weight: bold; }
+        .botao-novo:hover { background: var(--marrom-escuro); }
+        .rodape { text-align: center; margin-top: 2.5rem; color: var(--marrom-medio); font-size: 0.9rem; }
+        .aviso-erro { color: #d32f2f; background: #ffebee; padding: 0.8rem; border-radius: 6px; margin-top: 1rem; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>✏️ Irismar Desenhos</h1>
+    <p class="subtitulo">Faça sua Encomenda — Realismo em Grafite</p>
+
+    <!-- FORMULÁRIO -->
+    <form id="formPrincipal" action="https://formsubmit.co/miguelgomesg39@gmail.com" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="_subject" value="NOVA ENCOMENDA — Irismar Desenhos">
+        <input type="hidden" name="_captcha" value="false">
+        <input type="hidden" name="_template" value="table">
+        <input type="hidden" name="_next" id="urlRetorno" value="">
+
+        <div class="aviso">
+            💡 <strong>Como funciona:</strong> Escolha o formato → clique na moldura para enviar sua foto → a foto aparece dentro da moldura → preencha os dados → calcule o frete → envie!
+        </div>
+
+        <!-- FORMATOS -->
+        <div class="formatos-grid">
+            <!-- A4 -->
+            <div class="formato-card">
+                <h3>Formato A4</h3>
+                <p class="dimensoes">21,0 × 29,7 cm</p>
+                <p class="preco">R$ 95,00</p>
+
+                <div class="moldura moldura-a4" id="mol-a4">
+                    <img class="moldura-img" id="img-a4" src="" alt="">
+                    <input type="file" id="foto-a4" name="foto_referencia" accept="image/*">
+                    <div class="moldura-texto">
+                        <span>📷</span> Clique para<br>enviar foto
+                    </div>
+                </div>
+
+                <p class="descricao">Mais procurado! Até 2 pessoas com detalhes completos.</p>
+                <label class="selecao">
+                    <input type="radio" name="formato" value="A4 — R$ 95,00" data-mol="mol-a4" data-img="img-a4" data-inp="foto-a4" required>
+                    Escolher este
+                </label>
+            </div>
+
+            <!-- A3 -->
+            <div class="formato-card">
+                <h3>Formato A3</h3>
+                <p class="dimensoes">29,7 × 42,0 cm</p>
+                <p class="preco">R$ 160,00</p>
+
+                <div class="moldura moldura-a3" id="mol-a3">
+                    <img class="moldura-img" id="img-a3" src="" alt="">
+                    <input type="file" id="foto-a3" name="foto_referencia_a3" accept="image/*">
+                    <div class="moldura-texto">
+                        <span>📷</span> Clique para<br>enviar foto
+                    </div>
+                </div>
+
+                <p class="descricao">Grande e especial! Famílias, casais e mais de 2 pessoas.</p>
+                <label class="selecao">
+                    <input type="radio" name="formato" value="A3 — R$ 160,00" data-mol="mol-a3" data-img="img-a3" data-inp="foto-a3">
+                    Escolher este
+                </label>
+            </div>
+
+            <!-- Paisagem -->
+            <div class="formato-card">
+                <h3>Formato Paisagem</h3>
+                <p class="dimensoes">30,0 × 20,0 cm</p>
+                <p class="preco">R$ 110,00</p>
+
+                <div class="moldura moldura-paisagem" id="mol-pais">
+                    <img class="moldura-img" id="img-pais" src="" alt="">
+                    <input type="file" id="foto-pais" name="foto_referencia_paisagem" accept="image/*">
+                    <div class="moldura-texto">
+                        <span>📷</span> Clique para<br>enviar foto
+                    </div>
+                </div>
+
+                <p class="descricao">Largura maior — perfeito para casais e poses horizontais.</p>
+                <label class="selecao">
+                    <input type="radio" name="formato" value="Paisagem — R$ 110,00" data-mol="mol-pais" data-img="img-pais" data-inp="foto-pais">
+                    Escolher este
+                </label>
+            </div>
+        </div>
+
+        <!-- DADOS DO CLIENTE -->
+        <div class="dados-cliente">
+            <h2>📋 Seus Dados e Endereço</h2>
+
+            <div class="grupo">
+                <label for="nome">Nome Completo *</label>
+                <input type="text" id="nome" name="nome" required>
+            </div>
+
+            <div class="linha-dupla">
+                <div class="grupo">
+                    <label for="whatsapp">WhatsApp com DDD *</label>
+                    <input type="tel" id="whatsapp" name="whatsapp" placeholder="(XX) 9XXXX-XXXX" required>
+                </div>
+                <div class="grupo">
+                    <label for="email">E-mail</label>
+                    <input type="email" id="email" name="email" placeholder="seuemail@exemplo.com">
+                </div>
+            </div>
+
+            <div class="grupo cep-linha">
+                <div>
+                    <label for="cep">CEP *</label>
+                    <input type="text" id="cep" name="cep" placeholder="00000-000" required maxlength="9">
+                </div>
+                <button type="button" class="btn-pequeno" id="btnBuscarCep">🔍 Buscar</button>
+            </div>
+
+            <div class="grupo">
+                <label for="rua">Rua / Avenida *</label>
+                <input type="text" id="rua" name="rua" required>
+            </div>
+
+            <div class="linha-dupla">
+                <div class="grupo">
+                    <label for="numero">Número *</label>
+                    <input type="text" id="numero" name="numero" required>
+                </div>
+                <div class="grupo">
+                    <label for="complemento">Complemento</label>
+                    <input type="text" id="complemento" name="complemento" placeholder="Apto, Bloco...">
+                </div>
+            </div>
+
+            <div class="linha-dupla">
+                <div class="grupo">
+                    <label for="bairro">Bairro *</label>
+                    <input type="text" id="bairro" name="bairro" required>
+                </div>
+                <div class="grupo">
+                    <label for="cidade">Cidade / Estado *</label>
+                    <input type="text" id="cidade" name="cidade" required>
+                </div>
+            </div>
+
+            <!-- FRETE -->
+            <div class="grupo">
+                <label>💰 Calcular Frete *</label>
+                <button type="button" class="btn-pequeno" id="btnCalcFrete" style="width:100%; margin:0.5rem 0;">Calcular Valor do Frete</button>
+                <div class="frete-caixa" id="caixaFrete">
+                    <p style="font-weight:600; margin-bottom:0.5rem;">Selecione o frete:</p>
+                    <div id="opcoesFrete"></div>
+                    <input type="hidden" id="frete_tipo" name="frete_escolhido">
+                </div>
+            </div>
+
+            <div class="grupo">
+                <label for="observacoes">Detalhes sobre o desenho</label>
+                <textarea id="observacoes" name="observacoes" rows="4" placeholder="Ex: sem óculos, fundo simples..."></textarea>
+            </div>
+
+            <div class="grupo">
+                <label for="data">Precisa para alguma data?</label>
+                <input type="text" id="data" name="data_necessaria" placeholder="Ex: Aniversário dia 20/11">
+            </div>
+
+            <button type="submit" id="btnEnviar">📤 Enviar Encomenda</button>
+            <div class="aviso-erro" id="avisoErro"></div>
+        </div>
+    </form>
+
+    <!-- MENSAGEM DE SUCESSO — FIXA -->
+    <div class="sucesso" id="paginaSucesso">
+        <h2>✅ Pedido Enviado com Sucesso!</h2>
+        
+        <p>Olá! Muito obrigada pela confiança em meu trabalho 💛</p>
+        
+        <p>Recebi sua encomenda, a foto de referência e seu endereço. Em breve vou analisar tudo e te enviar o orçamento detalhado incluindo o valor do frete.</p>
+        
+        <p>📞 <span class="destaque">Retorno com o orçamento completo: em até 24 horas</span> pelo WhatsApp ou e-mail.</p>
+        
+        <p>🎨 <span class="destaque">Prazo de entrega:</span> Após confirmação e pagamento, o desenho ficará pronto em <span class="destaque">15 a 20 dias</span> + tempo de entrega dos Correios.</p>
+        
+        <p>Fique de olho nas mensagens! Qualquer dúvida é só falar. ✏️</p>
+        
+        <p style="font-size: 1.1rem; font-weight: bold; margin-top: 1rem;">Atenciosamente,<br>Irismar Desenhos</p>
+        
+        <a href="#" class="botao-novo" onclick="novaEncomenda(); return false;">📨 Fazer Nova Encomenda</a>
+    </div>
+
+    <div class="rodape">
+        <p>📧 miguelgomesg39@gmail.com</p>
+        <p style="margin-top: 0.5rem;">© 2026 Irismar Desenhos — Todos os direitos reservados</p>
+    </div>
+</div>
+
+<script>
+// ==============================================
+// 1. CONFIGURAR URL DE RETORNO
+// ==============================================
+const urlBase = window.location.href.split('?')[0];
+document.getElementById('urlRetorno').value = urlBase + '?ok=1';
+
+// ==============================================
+// 2. FOTO APARECE DENTRO DA MOLDURA
+// ==============================================
+function ativarPreview(inputId, imgId, molId) {
+    const input = document.getElementById(inputId);
+    const img = document.getElementById(imgId);
+    const mol = document.getElementById(molId);
+    if (!input || !img || !mol) return;
+
+    input.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            const leitor = new FileReader();
+            leitor.onload = function(e) {
+                img.src = e.target.result;
+                mol.classList.add('tem-foto');
+            };
+            leitor.readAsDataURL(this.files[0]);
+        }
+    });
+}
+
+// Inicializar pré-visualização para todos
+ativarPreview('foto-a4', 'img-a4', 'mol-a4');
+ativarPreview('foto-a3', 'img-a3', 'mol-a3');
+ativarPreview('foto-pais', 'img-pais', 'mol-pais');
+
+// ==============================================
+// 3. BUSCAR ENDEREÇO PELO CEP
+// ==============================================
+const cep = document.getElementById('cep');
+document.getElementById('btnBuscarCep').addEventListener('click', function() {
+    const cepNum = cep.value.replace(/\D/g, '');
+    if (cepNum.length !== 8) { alert('Digite um CEP com 8 dígitos!'); return; }
+
+    fetch(`https://viacep.com.br/ws/${cepNum}/json/`)
+        .then(res => res.json())
+        .then(dados => {
+            if (dados.erro) { alert('CEP não encontrado!'); return; }
+            document.getElementById('rua').value = dados.logradouro || '';
+            document.getElementById('bairro').value = dados.bairro || '';
+            document.getElementById('cidade').value = `${dados.localidade} - ${dados.uf}`;
+        })
+        .catch(() => alert('Erro! Preencha manualmente.'));
+});
+
+// ==============================================
+// 4. CALCULAR FRETE
+// ==============================================
+let freteEscolhido = null;
+const caixaFrete = document.getElementById('caixaFrete');
+const opcoesFrete = document.getElementById('opcoesFrete');
+
+document.getElementById('btnCalcFrete').addEventListener('click', function() {
+    const cepNum = cep.value.replace(/\D/g, '');
+    if (cepNum.length !== 8) { alert('Digite o CEP primeiro!'); return; }
+
+    // Valores base
+    const opcoes = [
+        {nome: 'PAC', valor: 12.50, prazo: '4 a 7 dias úteis'},
+        {nome: 'Sedex', valor: 18.90, prazo: '2 a 3 dias úteis'},
+        {nome: 'Sedex 10', valor: 28.00, prazo: 'Até 2 dias úteis'}
+    ];
+
+    // Ajuste simples por região
+    const regiao = cepNum[0];
+    const extra = {'0':2, '1':2, '2':2, '8':4, '9':5}[regiao] || 0;
+
+    opcoesFrete.innerHTML = '';
+    opcoes.forEach(f => {
+        const div = document.createElement('div');
+        div.className = 'frete-opcao';
+        div.innerHTML = `<strong>${f.nome}</strong> — R$ ${(f.valor + extra).toFixed(2)}<br><small>Prazo: ${f.prazo}</small>`;
+        div.onclick = function() {
+            document.querySelectorAll('.frete-opcao').forEach(el => el.classList.remove('ativo'));
+            this.classList.add('ativo');
+            freteEscolhido = {...f, valorFinal: (f.valor + extra).toFixed(2)};
+            document.getElementById('frete_tipo').value = `${f.nome} — R$ ${(f.valor + extra).toFixed(2)} (${f.prazo})`;
+        };
+        opcoesFrete.appendChild(div);
+    });
+
+    caixaFrete.classList.add('visivel');
+});
+
+// ==============================================
+// 5. VALIDAÇÃO ANTES DE ENVIAR
+// ==============================================
+const form = document.getElementById('formPrincipal');
+const sucesso = document.getElementById('paginaSucesso');
+const avisoErro = document.getElementById('avisoErro');
+const btnEnviar = document.getElementById('btnEnviar');
+
+form.addEventListener('submit', function(e) {
+    // Verificar formato escolhido
+    const escolha = document.querySelector('input[name="formato"]:checked');
+    if (!escolha) {
+        e.preventDefault();
+        avisoErro.textContent = '👉 Escolha um formato primeiro!';
+        avisoErro.style.display = 'block';
+        return;
+    }
+
+    // Verificar foto enviada
+    const idFoto = escolha.dataset.inp;
+    const foto = document.getElementById(idFoto);
+    if (!foto.files || foto.files.length === 0) {
+        e.preventDefault();
+        avisoErro.textContent = '👉 Envie a foto de referência na moldura!';
+        avisoErro.style.display = 'block';
+        return;
+    }
+
+    // Verificar frete
+    if (!freteEscolhido) {
+        e.preventDefault();
+        avisoErro.textContent = '👉 Calcule e escolha o tipo de frete!';
+        avisoErro.style.display = 'block';
+        return;
+    }
+
+    avisoErro.style.display = 'none';
+    btnEnviar.disabled = true;
+    btnEnviar.textContent = 'Enviando...';
+});
+
+// ==============================================
+// 6. MOSTRAR MENSAGEM DE SUCESSO
+// ==============================================
+function verificarSucesso() {
+    if (window.location.search.indexOf('ok=1') !== -1) {
+        form.style.display = 'none';
+        sucesso.classList.add('ativa');
+    }
+}
+verificarSucesso();
+
+// Botão nova encomenda
+function novaEncomenda() {
+    form.style.display = 'block';
+    sucesso.classList.remove('ativa');
+    btnEnviar.disabled = false;
+    btnEnviar.textContent = '📤 Enviar Encomenda';
+    window.history.pushState({}, document.title, urlBase);
+    form.reset();
+    freteEscolhido = null;
+    caixaFrete.classList.remove('visivel');
+    document.querySelectorAll('.moldura').forEach(m => m.classList.remove('tem-foto'));
+    document.querySelectorAll('.moldura-img').forEach(i => i.src = '');
+}
+</script>
+
+</body>
+</html>
